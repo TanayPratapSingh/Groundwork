@@ -120,8 +120,14 @@ class ResponseCache:
     # -- internals --------------------------------------------------------
 
     def _expire(self) -> None:
+        # `<=`, not `<`. An entry exactly at its TTL boundary is expired, and
+        # with a short TTL the strict comparison depends on clock resolution:
+        # an entry written and read within the same tick has
+        # `created_at == cutoff` and would survive a TTL of zero. That made a
+        # test flaky, which is the polite version of a cache occasionally
+        # serving something it was told to drop.
         cutoff = time.time() - self.ttl
-        for key in [k for k, e in self._entries.items() if e.created_at < cutoff]:
+        for key in [k for k, e in self._entries.items() if e.created_at <= cutoff]:
             del self._entries[key]
             self.stats.evictions += 1
 
