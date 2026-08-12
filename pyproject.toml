@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "groundwork"
+version = "0.1.0"
+description = "A production-shaped RAG stack: evaluation harness, guardrails, and an LLM gateway, measured on real public datasets."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Tanay Pratap Singh" }]
+keywords = ["rag", "llm-evaluation", "guardrails", "llm-gateway", "calibration", "ai-security"]
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+serve = ["fastapi>=0.110", "uvicorn>=0.27"]
+anthropic = ["anthropic>=0.116"]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

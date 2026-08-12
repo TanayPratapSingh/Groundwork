@@ -1,0 +1,16 @@
+# The core stack needs only these two. Everything below the first block is
+# optional: with numpy and pydantic alone, the pipeline, the guardrails, the
+# gateway, and the entire evaluation harness run offline and produce every
+# number in docs/06-results.md.
+numpy>=1.26
+pydantic>=2.6
+
+# HTTP gateway: `make serve`
+fastapi>=0.110
+uvicorn>=0.27
+
+# Live Claude calls: set ANTHROPIC_API_KEY
+anthropic>=0.116
+
+# Tests: `make test`
+pytest>=8.0
