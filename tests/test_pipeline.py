@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from conftest import requires_corpus
+from conftest import requires_corpus, requires_index
 from groundwork.gateway.budget import BudgetManager
 from groundwork.gateway.providers import OfflineProvider
 from groundwork.gateway.router import Gateway
@@ -164,6 +164,7 @@ def test_feature_extraction_produces_every_named_feature(tiny_index):
 
 
 @requires_corpus
+@requires_index
 def test_pipeline_runs_over_the_real_corpus():
     from groundwork.rag.corpus import load_questions, stratified_sample
 

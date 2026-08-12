@@ -64,10 +64,15 @@ def write_baseline(run, path: Path | None = None) -> Path:
     path = path or (ARTIFACT_DIR / "baseline.json")
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = run.as_dict() if hasattr(run, "as_dict") else run
+    metrics = flatten_metrics(payload)
+    # Sample size travels with the metrics. A baseline that does not say what
+    # it was measured over invites comparison against runs it is not
+    # comparable with.
+    metrics["n"] = payload.get("corpus", {}).get("questions_evaluated", 0)
     path.write_text(json.dumps({
         "started_at": payload.get("started_at"),
         "provider": payload.get("provider"),
-        "metrics": flatten_metrics(payload),
+        "metrics": metrics,
     }, indent=2) + "\n")
     return path
 

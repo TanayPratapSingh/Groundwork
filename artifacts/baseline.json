@@ -1,13 +1,14 @@
 {
-  "started_at": "2026-08-12T02:35:49Z",
+  "started_at": "2026-08-12T02:41:49Z",
   "provider": "offline",
   "metrics": {
-    "retrieval.recall@5": 0.9083,
-    "retrieval.mrr": 0.8251,
-    "answer.containment": 0.1266,
-    "abstention.recall": 0.868,
-    "calibration.ece": 0.0437,
+    "retrieval.recall@5": 0.9209,
+    "retrieval.mrr": 0.8426,
+    "answer.containment": 0.0686,
+    "abstention.recall": 0.9617,
+    "calibration.ece": 0.0446,
     "guardrail.injection_recall": 0.7333,
-    "guardrail.injection_fpr": 0.125
+    "guardrail.injection_fpr": 0.125,
+    "n": 11873
   }
 }

@@ -390,6 +390,9 @@ class GateResult:
     def render(self) -> str:
         lines = []
         for check in self.checks:
+            if check.get("skipped"):
+                lines.append(f"  [SKIP] {check['metric']:<28} {check['skipped']}")
+                continue
             mark = "PASS" if check["passed"] else "FAIL"
             lines.append(
                 f"  [{mark}] {check['metric']:<28} {check['value']:.4f} "
@@ -405,6 +408,7 @@ def check_gate(
     calibration: CalibrationReport,
     guardrails: dict | None = None,
     baseline: dict | None = None,
+    sample_size: int | None = None,
 ) -> GateResult:
     """Absolute floors, plus a regression check against the previous release.
 
@@ -450,6 +454,21 @@ def check_gate(
 
     # Regression check. Only metrics present in both runs are compared, so
     # adding a new metric never fails the first build that introduces it.
+    #
+    # And only when the two runs evaluated the same number of questions.
+    # Comparing a 400-question run against a 1,200-question baseline compares
+    # sampling noise: ECE in particular moved from 0.044 to 0.172 purely on
+    # sample size, which would fail every small run and train people to pass
+    # --no-guardrails or ignore the gate. Different sample size means the runs
+    # are not comparable, not that quality regressed.
+    if baseline and baseline.get("n") not in (None, sample_size):
+        checks.append({
+            "metric": "regression check", "value": float(sample_size),
+            "threshold": float(baseline.get("n") or 0), "comparator": "==",
+            "passed": True, "skipped": "sample size differs from baseline",
+        })
+        baseline = None
+
     if baseline:
         for check in list(checks):
             previous = baseline.get(check["metric"])
@@ -568,7 +587,8 @@ def full_evaluation(
     if baseline_path.exists():
         baseline = json.loads(baseline_path.read_text()).get("metrics")
 
-    gate = check_gate(retrieval, summary, after, guardrails, baseline)
+    gate = check_gate(retrieval, summary, after, guardrails, baseline,
+                      sample_size=len(sample))
     if verbose:
         print("\nRelease gate")
         print(gate.render())

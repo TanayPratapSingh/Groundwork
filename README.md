@@ -67,13 +67,13 @@ paragraph the question was written from.
 Full report: [`docs/06-results.md`](docs/06-results.md). Reproduce with
 `python3 scripts/run_eval.py`.
 
-**Retrieval** (1,200 stratified questions, exact labels)
+**Retrieval** (all 11,873 questions, exact labels)
 
 | Mode | recall@1 | recall@5 | MRR | nDCG@10 |
 |---|---|---|---|---|
-| sparse (BM25) | 0.758 | **0.908** | **0.825** | 0.854 |
-| hybrid (RRF) | 0.586 | 0.851 | 0.691 | 0.746 |
-| dense (hashing) | 0.408 | 0.595 | 0.491 | 0.535 |
+| sparse (BM25) | 0.782 | **0.921** | **0.843** | 0.869 |
+| hybrid (RRF) | 0.599 | 0.853 | 0.702 | 0.756 |
+| dense (hashing) | 0.419 | 0.601 | 0.497 | 0.539 |
 
 **Guardrails**
 
@@ -86,10 +86,12 @@ Full report: [`docs/06-results.md`](docs/06-results.md). Reproduce with
 
 False-positive rate on 600 real benign user questions: **5.0%**.
 
-**Calibration**: ECE 0.044, Brier 0.222, AUC 0.612 over 501 held-out questions.
+**Calibration**: ECE 0.045, Brier 0.213, AUC 0.654 over 4,881 held-out questions.
 
-**Answering**: at a 60% precision floor the system answers 15% of answerable
-questions and correctly declines 87% of unanswerable ones.
+**Answering**: at a 60% precision floor the system answers 7.5% of answerable
+questions and correctly declines **96.2%** of unanswerable ones. The full
+coverage/precision curve is in the report; that floor is the product decision,
+and everything else about the policy follows from it.
 
 ---
 
@@ -99,7 +101,7 @@ The harness is not decoration. Each of these was a design decision reversed by
 a measurement, and each is documented at the line of code it affected.
 
 **1. Hybrid retrieval was removed.** Fusing dense and sparse retrieval is the
-default recommendation, and here it is 5.7 points of recall@5 *worse* than
+default recommendation, and here it is 6.8 points of recall@5 *worse* than
 BM25 alone, because the hashing embedder has no semantic generalisation.
 Down-weighting the dense side improves the fusion monotonically right up to the
 point where it is switched off. The default is now `sparse`, all three modes
@@ -196,7 +198,7 @@ its own numbers.
 - **The embedder is a hashing bag-of-words**, not a semantic model. It is the
   honest floor a real embedding model has to beat, and the ablation is set up
   to test exactly that.
-- **Confidence AUC is 0.612.** Distinguishing SQuAD v2's answerable from
+- **Confidence AUC is 0.654.** Distinguishing SQuAD v2's answerable from
   unanswerable questions is genuinely hard, by design, and a lexical system
   does it only somewhat better than chance. That weak signal is why a 60%
   precision promise costs most of the coverage, and the threshold sweep shows

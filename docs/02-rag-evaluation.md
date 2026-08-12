@@ -58,10 +58,10 @@ redundancy these are a lower bound.
 
 | Metric | Value | What it means |
 |---|---|---|
-| Containment | 0.127 | Answerable questions where a gold span appears in the delivered answer |
-| Containment ceiling | 0.581 | The same, ignoring the abstain decision: what a perfect policy would get |
+| Containment | 0.069 | Answerable questions where a gold span appears in the delivered answer |
+| Containment ceiling | 0.552 | The same, ignoring the abstain decision: what a perfect policy would get |
 | Exact match | 0.000 | Official SQuAD EM |
-| Token F1 | 0.141 | Official SQuAD token overlap |
+| Token F1 | 0.131 | Official SQuAD token overlap |
 
 **EM near zero is expected and is not a system failure.** SQuAD's gold answers
 are minimal spans ("France", "1918"). This pipeline returns cited sentences.
@@ -73,8 +73,8 @@ and F1 are reported anyway, for comparability and as a check, because
 containment alone can be gamed by answering at length and the two moving in
 opposite directions would show that immediately.
 
-The **ceiling** matters as much as the headline. Containment 0.127 against a
-ceiling of 0.581 says the generation is fine and the decision policy is
+The **ceiling** matters as much as the headline. Containment 0.069 against a
+ceiling of 0.552 says the generation is fine and the decision policy is
 throwing answers away. Without that number, a containment drop is ambiguous
 between "generation regressed" and "the policy got more cautious", and those
 have completely different fixes.
@@ -86,11 +86,11 @@ behaviour into a confusion matrix.
 
 | | Value |
 |---|---|
-| Correct abstention on unanswerable | 0.868 |
-| False answer rate on unanswerable | 0.132 |
-| Answer rate on answerable | 0.153 |
+| Correct abstention on unanswerable | 0.962 |
+| False answer rate on unanswerable | 0.038 |
+| Answer rate on answerable | 0.075 |
 
-The system declines 87% of genuinely unanswerable questions, and pays for it
+The system declines 96% of genuinely unanswerable questions, and pays for it
 by declining a lot of answerable ones too. That trade is the product decision,
 and it is set explicitly rather than emerging by accident (section 4).
 
@@ -102,15 +102,15 @@ a threshold mean anything.
 
 | Metric | Value |
 |---|---|
-| ECE (15 bins, 501 held-out questions) | 0.044 |
-| MCE | 0.366 |
-| Brier | 0.222 |
-| AUC | 0.612 |
+| ECE (15 bins, 4,881 held-out questions) | 0.045 |
+| MCE | 0.196 |
+| Brier | 0.213 |
+| AUC | 0.654 |
 
 **ECE must never be read alone.** A model that outputs 0.5 for everything and
 is right half the time has near-zero ECE and no discriminative value at all.
-Quoted next to AUC 0.612 the pair is honest: the confidence is well calibrated
-and only somewhat discriminative.
+Quoted next to AUC 0.654 the pair is honest: the confidence is well calibrated
+and only moderately discriminative.
 
 The reliability diagram is printed in the terminal after every run, next to
 the numbers, because a calibration plot that lives in a notebook nobody opens
@@ -152,12 +152,12 @@ Fitted coefficients, which are readable precisely because the model is linear:
 
 | Feature | Weight |
 |---|---|
-| `query_coverage_answer` | +1.69 |
-| `query_coverage_top` | +0.96 |
-| `top_score` | −0.66 |
-| `query_coverage_context` | −0.29 |
-| `answer_length` | −0.22 |
-| `answer_type_match` | +0.12 |
+| `query_coverage_answer` | +1.38 |
+| `query_coverage_top` | +0.88 |
+| `query_coverage_context` | −0.60 |
+| `top_score` | −0.50 |
+| `answer_length` | −0.27 |
+| `answer_type_match` | +0.20 |
 
 The negative weight on `top_score` is worth noticing rather than smoothing
 over: conditional on the other features, a high retrieval score is mildly
@@ -282,8 +282,11 @@ python3 scripts/run_eval.py --no-guardrails  # RAG metrics only
 ```
 
 Sampling is stratified and seeded, so a sampled run is comparable across
-commits. That is the only thing that makes a regression gate on a sample mean
-anything.
+commits. The regression check additionally refuses to compare runs of
+different sizes: an early 400-question run measured ECE at 0.172 where the
+full corpus measures 0.045, purely on sample size, and failing a build on that
+would teach people to ignore the gate. CI runs `--full`, which takes 39
+seconds and removes the question entirely.
 
 Outputs land in `artifacts/`: `results.json` for machines, `RESULTS.md` for
 people, `baseline.json` for the next run to compare against.

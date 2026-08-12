@@ -31,7 +31,7 @@ jobs:
       # against artifacts/baseline.json. This is the step that fails a pull
       # request for making the system worse rather than for breaking it.
       - name: Evaluation and release gate
-        run: python3 scripts/run_eval.py -n 600
+        run: python3 scripts/run_eval.py --full
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -15,7 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from groundwork.config import RAW_DIR  # noqa: E402
+from groundwork.config import INDEX_PATH, RAW_DIR  # noqa: E402
 from groundwork.rag.corpus import Document  # noqa: E402
 from groundwork.rag.index import HybridIndex  # noqa: E402
 
@@ -27,6 +27,14 @@ requires_corpus = pytest.mark.skipif(
 requires_attacks = pytest.mark.skipif(
     not (RAW_DIR / "prompt_injections.jsonl").exists(),
     reason="attack corpora not fetched; run scripts/fetch_data.py",
+)
+
+# Separate from `requires_corpus`: a fresh clone can have the raw corpus
+# downloaded and no index built yet, and a test that assumes otherwise fails
+# for a reason that has nothing to do with what it is testing.
+requires_index = pytest.mark.skipif(
+    not INDEX_PATH.exists(),
+    reason="index not built; run scripts/build_index.py",
 )
 
 
