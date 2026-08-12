@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: groundwork
+  labels: { app: groundwork }
+spec:
+  # ClusterIP, not LoadBalancer. Exposure is the ingress controller's
+  # decision, made once, in one place, with TLS and auth attached. A service
+  # that types its own way onto the internet is how an internal API ends up
+  # public without anyone deciding that it should.
+  type: ClusterIP
+  selector: { app: groundwork }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: groundwork-artifacts
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi

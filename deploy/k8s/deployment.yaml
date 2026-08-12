@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: groundwork
+  labels: { app: groundwork }
+spec:
+  # One replica, and that is a real constraint rather than a starting point.
+  # The cache, budget ledgers, and rate-limit windows are in-process, so two
+  # replicas would each enforce half the rate limit and each hold a cold
+  # cache. Moving those to Redis is the prerequisite for scaling out; see
+  # docs/01-architecture.md section 5.
+  replicas: 1
+  selector:
+    matchLabels: { app: groundwork }
+  template:
+    metadata:
+      labels: { app: groundwork }
+    spec:
+      automountServiceAccountToken: false   # the app never calls the K8s API
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+
+      containers:
+        - name: groundwork
+          image: groundwork:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { containerPort: 8000, name: http }
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+
+          env:
+            - name: GROUNDWORK_HOST
+              value: "0.0.0.0"
+          envFrom:
+            # Secrets arrive from a Secret, never from the manifest. See
+            # secrets.yaml for why even that is only the second-best answer.
+            - secretRef: { name: groundwork-secrets }
+
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits:   { cpu: "2",    memory: "2Gi" }
+
+          # Liveness and readiness are genuinely different questions.
+          # Liveness: is the process wedged and in need of a restart?
+          # Readiness: can this pod serve right now (is the index loaded)?
+          # Pointing both at the same endpoint means a pod that is merely not
+          # ready gets killed and restarted, usually in a loop.
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          volumeMounts:
+            - { name: corpus,    mountPath: /app/data,      readOnly: true }
+            - { name: artifacts, mountPath: /app/artifacts }
+            - { name: tmp,       mountPath: /tmp }
+
+      volumes:
+        - name: corpus
+          configMap: { name: groundwork-corpus, optional: true }
+        - name: artifacts
+          # The audit log must outlive the pod. An emptyDir would discard the
+          # record of what happened at exactly the moment you want it.
+          persistentVolumeClaim: { claimName: groundwork-artifacts }
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }

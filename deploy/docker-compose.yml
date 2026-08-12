@@ -1,0 +1,67 @@
+# Hardened by default. Every option below removes a capability the service
+# does not need, on the principle that the time to decide what a process may
+# do is before it is compromised, not after.
+
+services:
+  groundwork:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: groundwork:local
+    ports:
+      # Bound to loopback. Publishing 8000:8000 exposes the service on every
+      # interface, which on a cloud host means the internet.
+      - "127.0.0.1:8000:8000"
+
+    environment:
+      # Never inline a real key here: compose files get committed.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GROUNDWORK_API_KEYS: ${GROUNDWORK_API_KEYS:-}
+      GROUNDWORK_PROVIDER: ${GROUNDWORK_PROVIDER:-}
+    env_file:
+      - path: ../.env
+        required: false
+
+    volumes:
+      # Corpus and index in read-only. The service reads the index; only the
+      # build step writes it, and that runs elsewhere.
+      - ../data:/app/data:ro
+      # The audit log must outlive the container, or the record of what
+      # happened dies with the incident that made you want it.
+      - groundwork-artifacts:/app/artifacts
+
+    # Root filesystem read-only, with explicit tmpfs for the little that needs
+    # to be writable. This is the single highest-value container control:
+    # most post-exploitation steps begin with writing a file.
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+    security_opt:
+      # Blocks setuid escalation, so a setuid binary inside the image cannot
+      # be used to gain privileges it was not started with.
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    # An LLM service without a memory limit is one large retrieved context
+    # away from an OOM that takes the host down with it.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          memory: 512M
+
+    restart: unless-stopped
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  groundwork-artifacts:

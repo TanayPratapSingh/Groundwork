@@ -1,0 +1,66 @@
+# Default-deny egress.
+#
+# This is the control that turns a successful prompt injection from an
+# exfiltration into a failed connection. Every guardrail in this repo is a
+# probabilistic classifier over adversarial text and will eventually be
+# evaded. A network policy is not: if the pod cannot open a socket to the
+# attacker's host, the payload that got through has nowhere to send anything.
+#
+# Apply it and then verify from inside the pod, because an egress policy that
+# was never tested is a comment:
+#
+#   kubectl exec deploy/groundwork -- python3 -c \
+#     "import urllib.request; urllib.request.urlopen('https://example.com', timeout=5)"
+#
+# That should fail.
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: groundwork-egress
+spec:
+  podSelector:
+    matchLabels: { app: groundwork }
+  policyTypes: [Egress, Ingress]
+
+  ingress:
+    # Only from the ingress controller. Nothing else in the cluster has any
+    # reason to reach this service directly.
+    - from:
+        - namespaceSelector:
+            matchLabels: { name: ingress-nginx }
+      ports:
+        - { protocol: TCP, port: 8000 }
+
+  egress:
+    # DNS, or nothing resolves.
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+          podSelector:
+            matchLabels: { k8s-app: kube-dns }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+
+    # HTTPS to the model provider only.
+    #
+    # ipBlock is a blunt instrument: it cannot express "api.anthropic.com",
+    # only address ranges, and provider addresses change. This rule as written
+    # allows all public HTTPS while excluding private ranges, which stops
+    # lateral movement into the cluster and internal services but does not
+    # stop exfiltration to an arbitrary public host.
+    #
+    # For a real deployment, route provider traffic through an egress proxy
+    # with an allowlist of hostnames and point this rule at the proxy. That is
+    # the version that actually constrains where data can go.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16     # link-local, includes cloud metadata
+      ports:
+        - { protocol: TCP, port: 443 }
