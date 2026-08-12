@@ -1,0 +1,91 @@
+{
+  "note": "Every dataset below is public and externally authored. This repo generates no training, evaluation, or corpus data of its own.",
+  "fetched_at_utc": "2026-08-12T01:55:35Z",
+  "datasets": {
+    "squad_v2_dev": {
+      "source": "https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json",
+      "file": "squad_v2_dev.json",
+      "sha256": "80a5225e94905956a6446d296ca1093975c4d3b3260f1d6c8f68bc2ab77182d8",
+      "bytes": 4370528,
+      "licence": "CC BY-SA 4.0",
+      "citation": "Rajpurkar, Jia & Liang (2018). Know What You Don't Know: Unanswerable Questions for SQuAD. ACL 2018.",
+      "homepage": "https://rajpurkar.github.io/SQuAD-explorer/",
+      "role": "Retrieval corpus (Wikipedia paragraphs), question set with gold answer spans, and the unanswerable labels that give the abstain policy and the calibration study real ground truth.",
+      "stats": {
+        "articles": 35,
+        "paragraphs": 1204,
+        "questions": 11873,
+        "answerable": 5928,
+        "unanswerable": 5945
+      }
+    },
+    "prompt_injections": {
+      "source": "huggingface:deepset/prompt-injections",
+      "file": "prompt_injections.jsonl",
+      "sha256": "85c58fbaf9d0ebc18ca188e216c3d1d8001bbd188c33b97871c948f284d1dc4b",
+      "bytes": 108976,
+      "licence": "CC BY 4.0",
+      "citation": "deepset. prompt-injections (Hugging Face Datasets).",
+      "homepage": "https://huggingface.co/datasets/deepset/prompt-injections",
+      "role": "Labelled benign/injection prompts: precision and recall for the injection rail.",
+      "stats": {
+        "rows": 662,
+        "splits": [
+          "train",
+          "test"
+        ]
+      }
+    },
+    "jailbreaks": {
+      "source": "huggingface:jackhhao/jailbreak-classification",
+      "file": "jailbreaks.jsonl",
+      "sha256": "ec2123bc979ee05f102aa3a34fd541a84f9a27c56791e3a1af8f10dd0221d445",
+      "bytes": 1743120,
+      "licence": "See dataset card",
+      "citation": "jackhhao. jailbreak-classification (Hugging Face Datasets).",
+      "homepage": "https://huggingface.co/datasets/jackhhao/jailbreak-classification",
+      "role": "Labelled jailbreak/benign prompts: precision and recall for the jailbreak rail.",
+      "stats": {
+        "rows": 1306,
+        "splits": [
+          "train",
+          "test"
+        ]
+      }
+    },
+    "gandalf_injections": {
+      "source": "huggingface:Lakera/gandalf_ignore_instructions",
+      "file": "gandalf_injections.jsonl",
+      "sha256": "46088e3c3e3a6088d680c0614964eeb823f4e91f0bca27762ad164df965fb877",
+      "bytes": 140410,
+      "licence": "MIT",
+      "citation": "Lakera AI. gandalf_ignore_instructions (Hugging Face Datasets).",
+      "homepage": "https://huggingface.co/datasets/Lakera/gandalf_ignore_instructions",
+      "role": "Real adversarial injection attempts written by players trying to beat a live system. Held out as an unseen attack set, so the injection rail is never tuned on it.",
+      "stats": {
+        "rows": 1000,
+        "splits": [
+          "train",
+          "validation",
+          "test"
+        ]
+      }
+    },
+    "pii": {
+      "source": "huggingface:ai4privacy/pii-masking-200k",
+      "file": "pii.jsonl",
+      "sha256": "faa762be4cdd91e793eff17912bcf59c2e523279e1aa05057a09918eddddf9d5",
+      "bytes": 1669840,
+      "licence": "See dataset card (research use)",
+      "citation": "ai4privacy. pii-masking-200k (Hugging Face Datasets).",
+      "homepage": "https://huggingface.co/datasets/ai4privacy/pii-masking-200k",
+      "role": "Texts with annotated PII spans: recall of the redaction rail per entity type.",
+      "stats": {
+        "rows": 1000,
+        "splits": [
+          "train"
+        ]
+      }
+    }
+  }
+}
