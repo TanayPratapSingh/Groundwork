@@ -1,0 +1,13 @@
+{
+  "started_at": "2026-08-12T02:35:49Z",
+  "provider": "offline",
+  "metrics": {
+    "retrieval.recall@5": 0.9083,
+    "retrieval.mrr": 0.8251,
+    "answer.containment": 0.1266,
+    "abstention.recall": 0.868,
+    "calibration.ece": 0.0437,
+    "guardrail.injection_recall": 0.7333,
+    "guardrail.injection_fpr": 0.125
+  }
+}
