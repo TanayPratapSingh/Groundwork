@@ -141,6 +141,12 @@ curl -s -X POST localhost:8000/v1/ask \
 Pre-flight checklist:
 
 - [ ] Real keys generated, `.env` not committed (it is in `.gitignore`)
+- [ ] **Trained detector artifacts present** in `artifacts/`. A missing
+      `detector_injection.npz` does not fail the deploy: the rail degrades to
+      patterns only, which drops injection recall from 0.733 to 0.083. It now
+      logs a WARNING, and `InjectionDetector.trained_available` is the thing to
+      assert on in a smoke test. This is the one item on this list that fails
+      open rather than closed, so check it explicitly.
 - [ ] `GROUNDWORK_ALLOW_DEV_KEYS` unset
 - [ ] Tenant quotas set to real budgets in `config.py`
 - [ ] `python3 scripts/run_eval.py` exits 0

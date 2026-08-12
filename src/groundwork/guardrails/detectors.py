@@ -134,6 +134,40 @@ def _heuristic_score(text: str, patterns) -> tuple[float, list[str]]:
 # Detectors
 # ==========================================================================
 
+def _load_trained(name: str, use_trained: bool) -> HashedTextClassifier | None:
+    """Load a fitted detector, and complain loudly when one is missing.
+
+    The silent-fallback bug this replaces is worth recording. `use_trained=True`
+    with no artefact on disk returned None and the detector quietly ran on
+    patterns alone, which drops injection recall from 0.733 to 0.083. Nothing
+    reported it. CI caught it only because a test asserted the combined
+    number, and in production the same path is a deploy that ships without the
+    model artefact and silently loses 88% of its injection coverage.
+
+    Degrading is still the right behaviour: a missing artefact should not take
+    the service down, and pattern matching is a real if weaker control. Doing
+    it *quietly* is what was wrong.
+    """
+    if not use_trained:
+        return None
+
+    model = HashedTextClassifier.load(model_path(name))
+    if model is None or not model.trained:
+        from ..telemetry.logging import get_logger, log_event
+        import logging
+
+        log_event(
+            get_logger("groundwork.guardrails"),
+            f"trained {name} detector unavailable, falling back to patterns only",
+            level=logging.WARNING,
+            detector=name,
+            expected_artifact=str(model_path(name)),
+            impact="substantially reduced recall; run scripts/run_eval.py to fit it",
+        )
+        return None
+    return model
+
+
 class InjectionDetector:
     """Prompt injection: attempts to replace the operator's instructions.
 
@@ -147,7 +181,17 @@ class InjectionDetector:
 
     def __init__(self, use_trained: bool = True) -> None:
         self.threshold = SETTINGS.guardrails.injection_threshold
-        self.model = HashedTextClassifier.load(model_path("injection")) if use_trained else None
+        self.model = _load_trained(self.name, use_trained)
+
+    @property
+    def trained_available(self) -> bool:
+        """Whether the fitted model actually loaded.
+
+        Exposed so callers can assert on it: a readiness probe, a deploy
+        check, or a test that means to measure the combined detector rather
+        than accidentally measuring the heuristic.
+        """
+        return self.model is not None and self.model.trained
 
     def __call__(self, text: str) -> Detection:
         heuristic, reasons = _heuristic_score(text, _INJECTION_PATTERNS)
@@ -177,7 +221,11 @@ class JailbreakDetector:
 
     def __init__(self, use_trained: bool = True) -> None:
         self.threshold = SETTINGS.guardrails.jailbreak_threshold
-        self.model = HashedTextClassifier.load(model_path("jailbreak")) if use_trained else None
+        self.model = _load_trained(self.name, use_trained)
+
+    @property
+    def trained_available(self) -> bool:
+        return self.model is not None and self.model.trained
 
     def __call__(self, text: str) -> Detection:
         heuristic, reasons = _heuristic_score(text, _JAILBREAK_PATTERNS)

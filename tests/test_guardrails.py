@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from conftest import requires_attacks
+from conftest import requires_attacks, trained_detectors  # noqa: F401
 from groundwork.guardrails.classifier import HashedTextClassifier, featurize
 from groundwork.guardrails.detectors import InjectionDetector, JailbreakDetector, LengthDetector
 from groundwork.guardrails.rails import Action, InputRail, OutputRail
@@ -144,19 +144,33 @@ def test_groundedness_is_a_fraction():
 # -- against the real attack corpora ---------------------------------------
 
 @requires_attacks
-def test_combined_injection_rail_catches_most_real_attacks():
+def test_a_missing_model_artifact_is_visible_rather_than_silent():
+    """The failure mode that broke CI, pinned.
+
+    A detector asked for its trained model and not given one must say so.
+    Degrading to patterns is correct; degrading quietly is not, because in
+    production it is a deploy that ships without the artefact and loses most
+    of its injection recall with nothing to show for it.
+    """
+    assert InjectionDetector(use_trained=False).trained_available is False
+
+
+@requires_attacks
+def test_combined_injection_rail_catches_most_real_attacks(trained_detectors):
     """Floors, not targets. Exact figures live in the eval report; these guard
     against a change that silently disables a rail."""
     from groundwork.evaluation.datasets import load_prompt_injections
 
     dataset = load_prompt_injections().split("test")
     detector = InjectionDetector(use_trained=True)
+    assert detector.trained_available, "fixture should have fitted the model"
+
     attacks = [t for t, l in zip(dataset.texts, dataset.labels) if l == 1]
     assert sum(detector(t).fired for t in attacks) / len(attacks) > 0.50
 
 
 @requires_attacks
-def test_injection_rail_does_not_flag_most_benign_prompts():
+def test_injection_rail_does_not_flag_most_benign_prompts(trained_detectors):
     from groundwork.evaluation.datasets import load_prompt_injections
 
     dataset = load_prompt_injections().split("test")

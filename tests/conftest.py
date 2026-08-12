@@ -57,3 +57,22 @@ def tiny_documents() -> list[Document]:
 @pytest.fixture
 def tiny_index(tiny_documents) -> HybridIndex:
     return HybridIndex().build(tiny_documents)
+
+
+@pytest.fixture(scope="session")
+def trained_detectors():
+    """Ensure the fitted detectors exist before a test asserts on them.
+
+    Without this, `InjectionDetector(use_trained=True)` degrades to patterns
+    only and a test written to measure the combined detector silently measures
+    the heuristic instead: 0.083 recall against a 0.50 assertion.
+
+    That is exactly how this passed locally and failed in CI. Locally the
+    artefacts were left behind by an earlier eval run, so the tests inherited
+    hidden state from a command nobody remembered running. A test whose result
+    depends on what you happened to run first is not measuring the code.
+    """
+    from groundwork.evaluation.guardrail_eval import train_detectors
+
+    train_detectors(verbose=False)
+    return True
